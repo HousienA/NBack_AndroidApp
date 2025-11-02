@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import mobappdev.example.nback_cimpl.R
 import mobappdev.example.nback_cimpl.ui.viewmodels.FakeVM
+import mobappdev.example.nback_cimpl.ui.viewmodels.GameType
 import mobappdev.example.nback_cimpl.ui.viewmodels.GameViewModel
 
 /**
@@ -49,7 +50,8 @@ import mobappdev.example.nback_cimpl.ui.viewmodels.GameViewModel
 
 @Composable
 fun HomeScreen(
-    vm: GameViewModel
+    vm: GameViewModel,
+    onNavigateToGame: () -> Unit = {}
 ) {
     val highscore by vm.highscore.collectAsState()  // Highscore is its own StateFlow
     val gameState by vm.gameState.collectAsState()
@@ -68,7 +70,7 @@ fun HomeScreen(
         ) {
             Text(
                 modifier = Modifier.padding(32.dp),
-                text = "High-Score = $highscore",
+                text = "High Score = $highscore",
                 style = MaterialTheme.typography.headlineLarge
             )
             // Todo: You'll probably want to change this "BOX" part of the composable
@@ -76,27 +78,18 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Button(
+                    onClick = {
+                        vm.startGame()
+                        onNavigateToGame()  // Add navigation call
+                    }
                 ) {
-                    if (gameState.eventValue != -1) {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = "Current eventValue is: ${gameState.eventValue}",
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    Button(onClick = vm::startGame) {
-                        Text(text = "Generate eventValues")
-                    }
+                    Text(
+                        text = "Start Game".uppercase(),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
                 }
             }
-            Text(
-                modifier = Modifier.padding(16.dp),
-                text = "Start Game".uppercase(),
-                style = MaterialTheme.typography.displaySmall
-            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -105,34 +98,26 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(onClick = {
-                    // Todo: change this button behaviour
-                    scope.launch {
-                        snackBarHostState.showSnackbar(
-                            message = "Hey! you clicked the audio button"
-                        )
-                    }
+                    vm.setGameType(GameType.Audio)
+                    vm.startGame()
+                    onNavigateToGame()
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.sound_on),
-                        contentDescription = "Sound",
+                        contentDescription = "Audio Mode",
                         modifier = Modifier
                             .height(48.dp)
                             .aspectRatio(3f / 2f)
                     )
                 }
-                Button(
-                    onClick = {
-                        // Todo: change this button behaviour
-                        scope.launch {
-                            snackBarHostState.showSnackbar(
-                                message = "Hey! you clicked the visual button",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    }) {
+                Button(onClick = {
+                    vm.setGameType(GameType.Visual)
+                    vm.startGame()
+                    onNavigateToGame()
+                }) {
                     Icon(
                         painter = painterResource(id = R.drawable.visual),
-                        contentDescription = "Visual",
+                        contentDescription = "Visual Mode",
                         modifier = Modifier
                             .height(48.dp)
                             .aspectRatio(3f / 2f)

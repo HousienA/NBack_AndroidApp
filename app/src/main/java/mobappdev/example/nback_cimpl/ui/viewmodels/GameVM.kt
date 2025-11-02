@@ -1,5 +1,7 @@
 package mobappdev.example.nback_cimpl.ui.viewmodels
 
+import android.media.SoundPool
+import android.media.tv.PesResponse
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -7,15 +9,19 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mobappdev.example.nback_cimpl.GameApplication
 import mobappdev.example.nback_cimpl.NBackHelper
 import mobappdev.example.nback_cimpl.data.UserPreferencesRepository
+import mobappdev.example.nback_cimpl.R
 
 /**
  * This is the GameViewModel.
@@ -61,6 +67,9 @@ class GameVM(
     override val highscore: StateFlow<Int>
         get() = _highscore
 
+    private var soundPool: SoundPool? = null
+    private val soundMap = mutableMapOf<Int, Int>()
+
     // nBack is currently hardcoded
     override val nBack: Int = 2
 
@@ -77,42 +86,132 @@ class GameVM(
 
     override fun startGame() {
         job?.cancel()  // Cancel any existing game loop
-
+        _score.value=0  // Reset score
         // Get the events from our C-model (returns IntArray, so we need to convert to Array<Int>)
         events = nBackHelper.generateNBackString(10, 9, 30, nBack).toList().toTypedArray()  // Todo Higher Grade: currently the size etc. are hardcoded, make these based on user input
         Log.d("GameVM", "The following sequence was generated: ${events.contentToString()}")
 
+        _gameState.value = gameState.value.copy(userResponses = mutableListOf())
+
         job = viewModelScope.launch {
-            when (gameState.value.gameType) {
+            when (_gameState.value.gameType) {
                 GameType.Audio -> runAudioGame()
                 GameType.AudioVisual -> runAudioVisualGame()
                 GameType.Visual -> runVisualGame(events)
             }
-            // Todo: update the highscore
+            Log.d("GameVM", "Game finished. Final score: ${_score.value}")
+            if (_score.value > _highscore.value) userPreferencesRepository.saveHighScore(_score.value)
         }
     }
 
     override fun checkMatch() {
-        /**
-         * Todo: This function should check if there is a match when the user presses a match button
-         * Make sure the user can only register a match once for each event.
-         */
-    }
-    private fun runAudioGame() {
-        // Todo: Make work for Basic grade
+        val currentIndex = _gameState.value.eventIndex
+
+        // Prevent registering same match twice
+        if (currentIndex in _gameState.value.userResponses) return
+
+        //Add responses
+        val newInputs = _gameState.value.userResponses.toMutableList()
+        newInputs.add(currentIndex)
+        _gameState.value = _gameState.value.copy(userResponses = newInputs)
+
+        // Check if it's actually a match (compare current with n-back)
+        if (currentIndex >= nBack) {
+            val currentValue = events[currentIndex]
+            val nBackValue = events[currentIndex - nBack]
+
+            if (currentValue == nBackValue) {
+                _score.value += 1 // Correct match
+                Log.d("GameVM", "Correct match at index $currentIndex")
+            } else {
+                _score.value -= 1 // Incorrect match (optional penalty)
+                Log.d("GameVM", "Incorrect match at index $currentIndex")
+            }
+        }
     }
 
-    private suspend fun runVisualGame(events: Array<Int>){
-        // Todo: Replace this code for actual game code
-        for (value in events) {
-            _gameState.value = _gameState.value.copy(eventValue = value)
+    private suspend fun runAudioGame() {
+        for ((index, value) in events.withIndex()) {
+            _gameState.value = _gameState.value.copy(
+                eventValue = value,
+                eventIndex = index
+            )
+            playSound(value)
+            delay(eventInterval)
+        }
+        _gameState.value = _gameState.value.copy(eventValue = -1, eventIndex = -1)
+    }
+
+    private suspend fun runVisualGame(events: Array<Int>) {
+        for ((index, value) in events.withIndex()) {
+            // Validate value
+            if (value < 0 || value > 8) {
+                Log.e("GameVM", "❌ Skipping invalid value $value at index $index")
+                continue
+            }
+
+            Log.d("GameVM", "▶️ Index $index: showing value $value (color: ${if (index % 2 == 1) "secondary" else "primary"})")
+
+            // Update state on Main thread
+            withContext(Dispatchers.Main) {
+                _gameState.update { state ->
+                    state.copy(
+                        eventValue = value,
+                        eventIndex = index,
+                        useAlternateColor = index % 2 == 1
+                    )
+                }
+            }
+
+            // Verify state updated
+            Log.d("GameVM", "State after update: eventValue=${_gameState.value.eventValue}, eventIndex=${_gameState.value.eventIndex}")
+
             delay(eventInterval)
         }
 
+        Log.d("GameVM", "🏁 Game finished, resetting state")
+        _gameState.update { it.copy(eventValue = -1, eventIndex = -1) }
     }
+
+
+
 
     private fun runAudioVisualGame(){
         // Todo: Make work for Higher grade
+    }
+
+    fun initializeSounds(context: android.content.Context) {
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(1)
+            .build()
+
+        soundPool?.setOnLoadCompleteListener { _, sampleId, status ->
+            Log.d("GameVM", "Sound $sampleId loaded with status $status")
+        }
+        // Load sounds into memory from A to I
+        soundMap[0] = soundPool?.load(context, R.raw.sound_0, 1) ?: 0
+        soundMap[1] = soundPool?.load(context, R.raw.sound_1, 1) ?: 0
+        soundMap[2] = soundPool?.load(context, R.raw.sound_2, 1) ?: 0
+        soundMap[3] = soundPool?.load(context, R.raw.sound_3, 1) ?: 0
+        soundMap[4] = soundPool?.load(context, R.raw.sound_4, 1) ?: 0
+        soundMap[5] = soundPool?.load(context, R.raw.sound_5, 1) ?: 0
+        soundMap[6] = soundPool?.load(context, R.raw.sound_6, 1) ?: 0
+        soundMap[7] = soundPool?.load(context, R.raw.sound_7, 1) ?: 0
+        soundMap[8] = soundPool?.load(context, R.raw.sound_8, 1) ?: 0
+    }
+
+    private fun playSound(position: Int) {
+        soundMap[position]?.let { soundId ->
+            if (soundId != 0) {
+                soundPool?.play(soundId, 1f, 1f, 1, 0, 1f)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundPool?.release()
+        soundPool = null
     }
 
     companion object {
@@ -144,7 +243,10 @@ enum class GameType{
 data class GameState(
     // You can use this state to push values from the VM to your UI.
     val gameType: GameType = GameType.Visual,  // Type of the game
-    val eventValue: Int = -1  // The value of the array string
+    val eventValue: Int = -1,  // The value of the array string
+    val eventIndex: Int = -1, // Current pos in the sequence
+    val useAlternateColor: Boolean = false,
+    val userResponses: MutableList<Int> = mutableListOf() // List of where users click were correct
 )
 
 class FakeVM: GameViewModel{
