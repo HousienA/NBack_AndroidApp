@@ -86,7 +86,7 @@ class GameVM(
 
     override fun startGame() {
         job?.cancel()  // Cancel any existing game loop
-        _score.value=0  // Reset score
+        _score.value=0
         // Get the events from our C-model (returns IntArray, so we need to convert to Array<Int>)
         events = nBackHelper.generateNBackString(10, 9, 30, nBack).toList().toTypedArray()  // Todo Higher Grade: currently the size etc. are hardcoded, make these based on user input
         Log.d("GameVM", "The following sequence was generated: ${events.contentToString()}")
@@ -124,7 +124,7 @@ class GameVM(
                 _score.value += 1 // Correct match
                 Log.d("GameVM", "Correct match at index $currentIndex")
             } else {
-                _score.value -= 1 // Incorrect match (optional penalty)
+                _score.value = maxOf(0, _score.value - 1) // Decrease by one if score > 0
                 Log.d("GameVM", "Incorrect match at index $currentIndex")
             }
         }
@@ -144,34 +144,16 @@ class GameVM(
 
     private suspend fun runVisualGame(events: Array<Int>) {
         for ((index, value) in events.withIndex()) {
-            // Validate value
-            if (value < 0 || value > 8) {
-                Log.e("GameVM", "❌ Skipping invalid value $value at index $index")
-                continue
-            }
-
-            Log.d("GameVM", "▶️ Index $index: showing value $value (color: ${if (index % 2 == 1) "secondary" else "primary"})")
-
-            // Update state on Main thread
-            withContext(Dispatchers.Main) {
-                _gameState.update { state ->
-                    state.copy(
-                        eventValue = value,
-                        eventIndex = index,
-                        useAlternateColor = index % 2 == 1
-                    )
-                }
-            }
-
-            // Verify state updated
-            Log.d("GameVM", "State after update: eventValue=${_gameState.value.eventValue}, eventIndex=${_gameState.value.eventIndex}")
-
+            _gameState.value = _gameState.value.copy(
+                eventValue = value,
+                eventIndex = index,
+                useAlternateColor = index % 2 == 1
+            )
             delay(eventInterval)
         }
-
-        Log.d("GameVM", "🏁 Game finished, resetting state")
-        _gameState.update { it.copy(eventValue = -1, eventIndex = -1) }
+        _gameState.value = _gameState.value.copy(eventValue = -1, eventIndex = -1)
     }
+
 
 
 

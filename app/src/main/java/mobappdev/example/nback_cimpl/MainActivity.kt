@@ -56,9 +56,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("game") {
-                            GameScreen(vm = gameViewModel)
-                        }
-                        composable("game") {
                             GameScreen(
                                 vm = gameViewModel,
                                 onNavigateHome = {

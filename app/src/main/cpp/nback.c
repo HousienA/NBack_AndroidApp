@@ -65,7 +65,7 @@ void createNBackString(int nBackString[], int size, int combinations, int matchP
 // Function to fill in a match (value and corresponding nBackString elements)
 void fillInAMatch(int nBackString[], int size, int combinations, int nback){
     // Generate a random value for the match
-    int value = 1 + rand() % combinations;
+    int value = rand() % combinations;
 
     int test = 0;
     // Continue trying to find a valid position until one is found
@@ -93,7 +93,7 @@ void fillInAllEmpty(int nBackString[], int size, int combinations, int nback){
             int foo, bar;
             while(test == 0){
                 // Generate a random value for the empty element
-                int value = 1 + rand() % combinations;
+                int value = rand() % combinations;
 
                 // Initialize foo and bar flags to 0
                 foo = 0;

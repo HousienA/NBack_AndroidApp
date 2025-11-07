@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -56,7 +58,6 @@ fun HomeScreen(
     val highscore by vm.highscore.collectAsState()  // Highscore is its own StateFlow
     val gameState by vm.gameState.collectAsState()
     val snackBarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackBarHostState) }
@@ -73,56 +74,86 @@ fun HomeScreen(
                 text = "High Score = $highscore",
                 style = MaterialTheme.typography.headlineLarge
             )
-            // Todo: You'll probably want to change this "BOX" part of the composable
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Button(
-                    onClick = {
-                        vm.startGame()
-                        onNavigateToGame()  // Add navigation call
-                    }
-                ) {
-                    Text(
-                        text = "Start Game".uppercase(),
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-            }
+
+            // Mode selection text
+            Text(
+                text = "Select Game Mode:",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Mode selection buttons
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxWidth(0.8f)
+                    .padding(bottom = 32.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Button(onClick = {
-                    vm.setGameType(GameType.Audio)
+                // Audio mode button
+                Button(
+                    onClick = { vm.setGameType(GameType.Audio) },
+                    modifier = Modifier.weight(1f).height(80.dp),
+                    colors = if (gameState.gameType == GameType.Audio) {    // Selected state
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    } else {    // Unselected state
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.sound_on),
+                            contentDescription = "Audio Mode",
+                            modifier = Modifier.height(32.dp).aspectRatio(3f / 2f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Audio")
+                    }
+                }
+
+                // Visual mode button
+                Button(
+                    onClick = { vm.setGameType(GameType.Visual) },
+                    modifier = Modifier.weight(1f).height(80.dp),
+                    colors = if (gameState.gameType == GameType.Visual) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.visual),
+                            contentDescription = "Visual Mode",
+                            modifier = Modifier.height(32.dp).aspectRatio(3f / 2f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Visual")
+                    }
+                }
+            }
+
+            // Start Game button
+            Button(
+                onClick = {
                     vm.startGame()
                     onNavigateToGame()
-                }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.sound_on),
-                        contentDescription = "Audio Mode",
-                        modifier = Modifier
-                            .height(48.dp)
-                            .aspectRatio(3f / 2f)
-                    )
-                }
-                Button(onClick = {
-                    vm.setGameType(GameType.Visual)
-                    vm.startGame()
-                    onNavigateToGame()
-                }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.visual),
-                        contentDescription = "Visual Mode",
-                        modifier = Modifier
-                            .height(48.dp)
-                            .aspectRatio(3f / 2f)
-                    )
-                }
+                },
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(70.dp)
+            ) {
+                Text(
+                    text = "Start Game".uppercase(),
+                    style = MaterialTheme.typography.headlineLarge
+                )
             }
         }
     }
@@ -131,7 +162,6 @@ fun HomeScreen(
 @Preview
 @Composable
 fun HomeScreenPreview() {
-    // Since I am injecting a VM into my homescreen that depends on Application context, the preview doesn't work.
     Surface(){
         HomeScreen(FakeVM())
     }
