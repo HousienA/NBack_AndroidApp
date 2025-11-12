@@ -18,11 +18,20 @@ import androidx.compose.ui.unit.dp
 import mobappdev.example.nback_cimpl.ui.viewmodels.GameViewModel
 import mobappdev.example.nback_cimpl.ui.viewmodels.FakeVM
 import mobappdev.example.nback_cimpl.ui.viewmodels.GameType
+import mobappdev.example.nback_cimpl.ui.viewmodels.GameVM
 
 @Composable
 fun GameScreen(vm: GameViewModel, onNavigateHome: () -> Unit = {}) {
     val gameState by vm.gameState.collectAsState()
     val score by vm.score.collectAsState()
+
+    val totalEvents = vm.totalEvents
+    val eventNumberText = if (gameState.eventIndex >= 0) {
+        "Event ${gameState.eventIndex + 1}/$totalEvents"
+    } else {
+        "Event -/-"
+    }
+
 
     Scaffold { padding ->
         Column(
@@ -33,12 +42,23 @@ fun GameScreen(vm: GameViewModel, onNavigateHome: () -> Unit = {}) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Score display at top
-            Text(
-                text = "Score: $score",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Score: $score",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "N-back: ${vm.nBack}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Text(
+                    text = eventNumberText,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+            }
 
             if(gameState.gameType != GameType.Audio) {
                 // 3x3 Grid in the middle
@@ -80,7 +100,7 @@ fun GameScreen(vm: GameViewModel, onNavigateHome: () -> Unit = {}) {
                     }
                 }
             } else {
-                // Show audio indicator instead
+                // Show audio version
                 Text(
                     text = "Listen to the sounds",
                     style = MaterialTheme.typography.headlineMedium,

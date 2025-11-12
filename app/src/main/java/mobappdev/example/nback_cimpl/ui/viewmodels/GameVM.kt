@@ -46,6 +46,9 @@ interface GameViewModel {
     val highscore: StateFlow<Int>
     val nBack: Int
 
+    val totalEvents: Int
+
+
     fun setGameType(gameType: GameType)
     fun startGame()
 
@@ -73,6 +76,8 @@ class GameVM(
     // nBack is currently hardcoded
     override val nBack: Int = 2
 
+    override val totalEvents = 10
+
     private var job: Job? = null  // coroutine job for the game event
     private val eventInterval: Long = 2000L  // 2000 ms (2s)
 
@@ -88,7 +93,7 @@ class GameVM(
         job?.cancel()  // Cancel any existing game loop
         _score.value=0
         // Get the events from our C-model (returns IntArray, so we need to convert to Array<Int>)
-        events = nBackHelper.generateNBackString(10, 9, 30, nBack).toList().toTypedArray()  // Todo Higher Grade: currently the size etc. are hardcoded, make these based on user input
+        events = nBackHelper.generateNBackString(totalEvents, 9, 30, nBack).toList().toTypedArray()  // Todo Higher Grade: currently the size etc. are hardcoded, make these based on user input
         Log.d("GameVM", "The following sequence was generated: ${events.contentToString()}")
 
         _gameState.value = gameState.value.copy(userResponses = mutableListOf())
@@ -240,6 +245,8 @@ class FakeVM: GameViewModel{
         get() = MutableStateFlow(42).asStateFlow()
     override val nBack: Int
         get() = 2
+    override val totalEvents: Int
+        get() = 10
 
     override fun setGameType(gameType: GameType) {
     }

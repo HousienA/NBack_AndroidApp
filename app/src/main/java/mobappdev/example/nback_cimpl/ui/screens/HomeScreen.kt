@@ -75,6 +75,13 @@ fun HomeScreen(
                 style = MaterialTheme.typography.headlineLarge
             )
 
+            Text(
+                text = "N-back: ${vm.nBack}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
             // Mode selection text
             Text(
                 text = "Select Game Mode:",

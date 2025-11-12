@@ -1,4 +1,4 @@
-# Install script for directory: C:/MobileAppLabs/nBackLabB1/app/src/main/cpp
+# Install script for directory: C:/UniWork/Year3/MobileAppLabs/nBackLabB1/app/src/main/cpp
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/MobileAppLabs/nBackLabB1/app/.cxx/Debug/3e01z3q1/x86/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/UniWork/Year3/MobileAppLabs/nBackLabB1/app/.cxx/Debug/3e01z3q1/x86/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
